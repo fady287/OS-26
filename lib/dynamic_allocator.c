@@ -45,10 +45,10 @@ void PrintFreeBlockLists()
 //===========================
 __inline__ uint32 get_block_size(void *va)
 {
-	//TODO: [PROJECT'26.GM#1] DYNAMIC ALLOCATOR - [1] get_block_size
-	//Your code is here
-	//Comment the following line
-	panic("get_block_size() not implemented");
+	uint32 meta = (uint32) va - META_DATA_SIZE;
+	struct BlockMetaData *cur = (struct BlockMetaData *)meta;
+	uint32 lvl = cur->level;
+	return BLOCK_SIZE(lvl);
 
 }
 //===========================
@@ -67,10 +67,22 @@ void *alloc_block(uint32 requiredSize)
 //===================================================
 void free_block(void *va)
 {
-	//TODO: [PROJECT'26.GM#1] DYNAMIC ALLOCATOR - [3] free_block
-	//Your code is here
-	//Comment the following line
-	panic("free_block() not implemented");
+	uint32 curAddress = (uint32) va - META_DATA_SIZE;
+	struct BlockMetaData *cur = (struct BlockMetaData *)curAddress;
+	cur->is_free = 1;
+
+	while(cur->level < BUDDY_UPPER_LEVEL){
+		uint32 buddyAddress = curAddress ^ get_block_size(va);
+		struct BlockMetaData *buddy = (struct BlockMetaData *)buddyAddress;
+		if(buddy->is_free == 1 && buddy->level == cur->level){
+			curAddress = min(curAddress, buddyAddress);
+			cur = (struct BlockMetaData *)curAddress;
+			cur->level = buddy->level+1;
+			LIST_REMOVE(&freeBlockLists[buddy->level], buddy);
+		}
+		else break;
+	}
+	LIST_INSERT_HEAD(&freeBlockLists[cur->level], cur);
 }
 
 //=================================================================================//
