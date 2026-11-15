@@ -60,6 +60,8 @@ void *alloc_block(uint32 requiredSize)
 	//Your code is here
 	//Comment the following line
 	panic("alloc_block() not implemented");
+	//do not forget if memory is full
+
 }
 
 //===================================================
@@ -71,18 +73,23 @@ void free_block(void *va)
 	struct BlockMetaData *cur = (struct BlockMetaData *)curAddress;
 	cur->is_free = 1;
 
-	while(cur->level < BUDDY_UPPER_LEVEL){
-		uint32 buddyAddress = curAddress ^ get_block_size(va);
+	while(cur->level <= BUDDY_UPPER_LEVEL){
+		void *tva = (void *)(curAddress + META_DATA_SIZE);
+		uint32 buddyAddress = curAddress ^ get_block_size(tva);
 		struct BlockMetaData *buddy = (struct BlockMetaData *)buddyAddress;
 		if(buddy->is_free == 1 && buddy->level == cur->level){
-			curAddress = min(curAddress, buddyAddress);
+			if(buddyAddress<curAddress) curAddress = buddyAddress;
+			LIST_REMOVE(&freeBlockLists[buddy->level], buddy);
 			cur = (struct BlockMetaData *)curAddress;
 			cur->level = buddy->level+1;
-			LIST_REMOVE(&freeBlockLists[buddy->level], buddy);
 		}
 		else break;
 	}
-	LIST_INSERT_HEAD(&freeBlockLists[cur->level], cur);
+	if(cur->level > BUDDY_UPPER_LEVEL){
+		void *tva = (void *)(curAddress + META_DATA_SIZE);
+		delete_buddy_space(tva);
+	}
+	else LIST_INSERT_HEAD(&freeBlockLists[cur->level], cur);
 }
 
 //=================================================================================//
