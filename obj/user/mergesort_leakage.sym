@@ -1,7 +1,7 @@
 00200010 R __STAB_BEGIN__
-002061c0 R __STAB_END__
-002061c1 R __STABSTR_BEGIN__
-0020a116 R __STABSTR_END__
+00206700 R __STAB_END__
+00206701 R __STABSTR_BEGIN__
+0020a6eb R __STABSTR_END__
 00800020 T _start
 00800031 t args_exist
 00800038 T _main
@@ -114,11 +114,11 @@
 00802441 T PrintFreeBlockLists
 0080247d T get_block_size
 008024ad T alloc_block
-008024c7 T free_block
-008026e0 T realloc_block
-008026fc T __udivdi3
-0080280c T __umoddi3
-00802f00 r error_string
+00802963 T free_block
+00802b82 T realloc_block
+00802ba0 T __udivdi3
+00802cb0 T __umoddi3
+008033c0 r error_string
 00804000 D printStats
 00804004 D binaryname
 00804008 D __firstTimeFlag

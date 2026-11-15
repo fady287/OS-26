@@ -56,12 +56,61 @@ __inline__ uint32 get_block_size(void *va)
 //===========================
 void *alloc_block(uint32 requiredSize)
 {
-	//TODO: [PROJECT'26.GM#1] DYNAMIC ALLOCATOR - [2] alloc_block
-	//Your code is here
-	//Comment the following line
-	panic("alloc_block() not implemented");
-	//do not forget if memory is full
+	if(requiredSize==0) return NULL;
+	uint32 realsize = requiredSize + META_DATA_SIZE;
+	uint32 level;
+	for(int i = BUDDY_LOWER_LEVEL; i <= BUDDY_UPPER_LEVEL;i++){
+		if(BLOCK_SIZE(i)>=realsize){
+			level=i;
+			break;
+		}
+	}
+	uint32 first_free_level;
+	bool found = 0;
+	for(int i =level;i<=BUDDY_UPPER_LEVEL;i++){
+		if(LIST_SIZE(&freeBlockLists[i])>0){
+			found = 1;
+			first_free_level=i;
+			break;
+		}
+	}
+	if(found==0){
 
+		void *address = create_buddy_space();
+		if(address==NULL) return NULL;
+
+		uint32 iaddress=(uint32) address;
+		struct BlockMetaData *cur= (struct BlockMetaData*) address;
+		uint32 bAddress = iaddress + BLOCK_SIZE(BUDDY_UPPER_LEVEL);
+		struct BlockMetaData *buddy= (struct BlockMetaData*)bAddress;
+		cur -> is_free=1;
+		cur -> level = BUDDY_UPPER_LEVEL;
+		buddy -> is_free=1;
+		buddy -> level= BUDDY_UPPER_LEVEL;
+		LIST_INSERT_HEAD(&freeBlockLists[BUDDY_UPPER_LEVEL],buddy);
+		LIST_INSERT_HEAD(&freeBlockLists[BUDDY_UPPER_LEVEL],cur);
+		first_free_level=BUDDY_UPPER_LEVEL;
+	}
+
+
+	while(first_free_level > level){
+		struct BlockMetaData *cur = LIST_FIRST(&freeBlockLists[first_free_level]);
+		LIST_REMOVE(&freeBlockLists[first_free_level],cur);
+		uint32 bAdress= (uint32)cur ^ BLOCK_SIZE((first_free_level-1));
+		struct BlockMetaData *buddy = (struct BlockMetaData*) bAdress;
+		buddy->level=first_free_level-1;
+		buddy->is_free=1;
+		cur->is_free=1;
+		cur->level=first_free_level-1;
+		LIST_INSERT_HEAD(&freeBlockLists[first_free_level-1],buddy);
+		LIST_INSERT_HEAD(&freeBlockLists[first_free_level-1],cur);
+		first_free_level--;
+	}
+	struct BlockMetaData *ret = LIST_FIRST(&freeBlockLists[level]);
+	LIST_REMOVE(&freeBlockLists[level],ret);
+	ret -> is_free=0;
+	void *ret_adress= (void *)((uint32) ret+META_DATA_SIZE);
+	return ret_adress;
 }
 
 //===================================================
