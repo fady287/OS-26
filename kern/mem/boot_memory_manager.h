@@ -16,6 +16,7 @@ uint32 number_of_frames;			// Amount of physical memory (in frames_info)
 uint32 size_of_base_mem;			// Amount of base memory (in bytes)
 uint32 size_of_extended_mem;		// Amount of extended memory (in bytes)
 extern char ptr_stack_top[], ptr_stack_bottom[];
+uint32 *Frame_to_VA;
 
 // These variables are set in initialize_kernel_VM()
 uint32* ptr_page_directory;			// Virtual address of boot time page directory

@@ -6,6 +6,8 @@
 #endif
 
 #include <inc/types.h>
+#include <inc/queue.h>
+#include <inc/memlayout.h>
 
 /*2017*/
 //Values for user heap placement strategy
@@ -37,7 +39,20 @@ void *krealloc(void *virtual_address, unsigned int new_size);
 unsigned int kheap_virtual_address(unsigned int physical_address);
 unsigned int kheap_physical_address(unsigned int virtual_address);
 
-int numOfKheapVACalls ;
+LIST_HEAD(GapInfo_List, FreeGaps);
+typedef LIST_ENTRY(FreeGaps) Gap_LIST_entry_t;
 
+struct FreeGaps {
+	Gap_LIST_entry_t prev_next_info;
+	uint32 start;
+	uint32 size;
+};
+
+struct GapInfo_List FreeGapsList;
+
+int numOfKheapVACalls;
+
+uint32 sz[NUM_OF_KHEAP_PAGES+5];
+uint32 buddy_system_block[NUM_OF_KHEAP_PAGES+5];
 
 #endif // FOS_KERN_KHEAP_H_

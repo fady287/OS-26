@@ -5731,11 +5731,6 @@ void *alloc_block(uint32 requiredSize)
   8025a3:	55                   	push   %ebp
   8025a4:	89 e5                	mov    %esp,%ebp
   8025a6:	83 ec 48             	sub    $0x48,%esp
-	//TODO: [PROJECT'26.GM#1] DYNAMIC ALLOCATOR - [2] alloc_block
-	//Your code is here
-	//Comment the following line
-	//panic("alloc_block() not implemented");
-	//do not forget if memory is full
 	if(requiredSize==0) return NULL;
   8025a9:	83 7d 08 00          	cmpl   $0x0,0x8(%ebp)
   8025ad:	75 0a                	jne    8025b9 <alloc_block+0x16>
@@ -5762,8 +5757,8 @@ void *alloc_block(uint32 requiredSize)
   8025e1:	89 45 f4             	mov    %eax,-0xc(%ebp)
 			break;
   8025e4:	eb 09                	jmp    8025ef <alloc_block+0x4c>
-	//panic("alloc_block() not implemented");
-	//do not forget if memory is full
+void *alloc_block(uint32 requiredSize)
+{
 	if(requiredSize==0) return NULL;
 	uint32 realsize = requiredSize + META_DATA_SIZE;
 	uint32 level;
@@ -5853,7 +5848,7 @@ void *alloc_block(uint32 requiredSize)
   802684:	75 14                	jne    80269a <alloc_block+0xf7>
   802686:	83 ec 04             	sub    $0x4,%esp
   802689:	68 88 38 80 00       	push   $0x803888
-  80268e:	6a 5f                	push   $0x5f
+  80268e:	6a 5a                	push   $0x5a
   802690:	68 ab 38 80 00       	push   $0x8038ab
   802695:	e8 01 e6 ff ff       	call   800c9b <_panic>
   80269a:	8b 15 10 41 80 00    	mov    0x804110,%edx
@@ -5881,7 +5876,7 @@ void *alloc_block(uint32 requiredSize)
   8026e6:	75 14                	jne    8026fc <alloc_block+0x159>
   8026e8:	83 ec 04             	sub    $0x4,%esp
   8026eb:	68 88 38 80 00       	push   $0x803888
-  8026f0:	6a 60                	push   $0x60
+  8026f0:	6a 5b                	push   $0x5b
   8026f2:	68 ab 38 80 00       	push   $0x8038ab
   8026f7:	e8 9f e5 ff ff       	call   800c9b <_panic>
   8026fc:	8b 15 10 41 80 00    	mov    0x804110,%edx
@@ -5922,7 +5917,7 @@ void *alloc_block(uint32 requiredSize)
   802764:	75 14                	jne    80277a <alloc_block+0x1d7>
   802766:	83 ec 04             	sub    $0x4,%esp
   802769:	68 c3 38 80 00       	push   $0x8038c3
-  80276e:	6a 67                	push   $0x67
+  80276e:	6a 62                	push   $0x62
   802770:	68 ab 38 80 00       	push   $0x8038ab
   802775:	e8 21 e5 ff ff       	call   800c9b <_panic>
   80277a:	8b 45 c8             	mov    -0x38(%ebp),%eax
@@ -6005,7 +6000,7 @@ void *alloc_block(uint32 requiredSize)
   802850:	75 14                	jne    802866 <alloc_block+0x2c3>
   802852:	83 ec 04             	sub    $0x4,%esp
   802855:	68 88 38 80 00       	push   $0x803888
-  80285a:	6a 6e                	push   $0x6e
+  80285a:	6a 69                	push   $0x69
   80285c:	68 ab 38 80 00       	push   $0x8038ab
   802861:	e8 35 e4 ff ff       	call   800c9b <_panic>
   802866:	8b 45 ec             	mov    -0x14(%ebp),%eax
@@ -6056,7 +6051,7 @@ void *alloc_block(uint32 requiredSize)
   8028e8:	75 14                	jne    8028fe <alloc_block+0x35b>
   8028ea:	83 ec 04             	sub    $0x4,%esp
   8028ed:	68 88 38 80 00       	push   $0x803888
-  8028f2:	6a 6f                	push   $0x6f
+  8028f2:	6a 6a                	push   $0x6a
   8028f4:	68 ab 38 80 00       	push   $0x8038ab
   8028f9:	e8 9d e3 ff ff       	call   800c9b <_panic>
   8028fe:	8b 45 ec             	mov    -0x14(%ebp),%eax
@@ -6129,7 +6124,7 @@ void *alloc_block(uint32 requiredSize)
   80299f:	75 14                	jne    8029b5 <alloc_block+0x412>
   8029a1:	83 ec 04             	sub    $0x4,%esp
   8029a4:	68 c3 38 80 00       	push   $0x8038c3
-  8029a9:	6a 73                	push   $0x73
+  8029a9:	6a 6e                	push   $0x6e
   8029ab:	68 ab 38 80 00       	push   $0x8038ab
   8029b0:	e8 e6 e2 ff ff       	call   800c9b <_panic>
   8029b5:	8b 45 bc             	mov    -0x44(%ebp),%eax
@@ -6248,7 +6243,7 @@ void free_block(void *va)
   802acc:	75 17                	jne    802ae5 <free_block+0x8c>
   802ace:	83 ec 04             	sub    $0x4,%esp
   802ad1:	68 c3 38 80 00       	push   $0x8038c3
-  802ad6:	68 88 00 00 00       	push   $0x88
+  802ad6:	68 83 00 00 00       	push   $0x83
   802adb:	68 ab 38 80 00       	push   $0x8038ab
   802ae0:	e8 b6 e1 ff ff       	call   800c9b <_panic>
   802ae5:	8b 45 e4             	mov    -0x1c(%ebp),%eax
@@ -6354,7 +6349,7 @@ void free_block(void *va)
   802bca:	75 17                	jne    802be3 <free_block+0x18a>
   802bcc:	83 ec 04             	sub    $0x4,%esp
   802bcf:	68 88 38 80 00       	push   $0x803888
-  802bd4:	68 92 00 00 00       	push   $0x92
+  802bd4:	68 8d 00 00 00       	push   $0x8d
   802bd9:	68 ab 38 80 00       	push   $0x8038ab
   802bde:	e8 b8 e0 ff ff       	call   800c9b <_panic>
   802be3:	8b 45 f0             	mov    -0x10(%ebp),%eax
@@ -6426,7 +6421,7 @@ void *realloc_block(void* va, uint32 newSize)
 	panic("realloc_block() Not implemented yet");
   802c7e:	83 ec 04             	sub    $0x4,%esp
   802c81:	68 e4 38 80 00       	push   $0x8038e4
-  802c86:	68 a1 00 00 00       	push   $0xa1
+  802c86:	68 9c 00 00 00       	push   $0x9c
   802c8b:	68 ab 38 80 00       	push   $0x8038ab
   802c90:	e8 06 e0 ff ff       	call   800c9b <_panic>
   802c95:	66 90                	xchg   %ax,%ax

@@ -1,5 +1,5 @@
 obj/kern/mem/kheap.o: kern/mem/kheap.c kern/mem/kheap.h inc/types.h \
- inc/memlayout.h inc/queue.h inc/mmu.h inc/dynamic_allocator.h \
+ inc/queue.h inc/memlayout.h inc/mmu.h inc/dynamic_allocator.h \
  inc/environment_definitions.h inc/trap.h inc/x86.h inc/fixed_point.h \
  inc/assert.h inc/stdio.h inc/stdarg.h inc/string.h inc/ipc.h \
  kern/conc/kspinlock.h kern/conc/sleeplock.h kern/conc/channel.h \

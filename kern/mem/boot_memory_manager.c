@@ -135,6 +135,7 @@ void initialize_kernel_VM()
 	//cprintf("size of WorkingSetPage = %d\n",sizeof(struct WorkingSetPage));
 	uint32 array_size;
 	array_size = number_of_frames * sizeof(struct FrameInfo) ;
+	Frame_to_VA = boot_allocate_space(number_of_frames * sizeof(uint32), PAGE_SIZE);
 	frames_info = boot_allocate_space(array_size, PAGE_SIZE);
 	/*2023: this line is moved to the boot_allocate_space()*/ //memset(frames_info, 0, array_size);
 
