@@ -68,9 +68,17 @@ void sleep(struct Channel *chan, struct kspinlock* lk)
 void wakeup_one(struct Channel *chan)
 {
 	//TODO: [PROJECT'26.GM#4] BLOCKING - [14] Channel wakeup_one
-	//Your code is here
-	//Comment the following line
-	panic("wakeup_one() is not implemented yet...!!");
+  // check that chan length > 0;
+
+  acquire_kspinlock(&ProcessQueues.qlock);
+  if ((queue_size(&(chan->queue)) > 0)) {
+    struct Env *cur_proc = dequeue(&(chan->queue));
+    cur_proc->env_status = ENV_READY;
+    sched_insert_ready(cur_proc);
+  }
+  release_kspinlock(&ProcessQueues.qlock);
+
+	// panic("wakeup_one() is not implemented yet...!!");
 }
 
 //====================================================
