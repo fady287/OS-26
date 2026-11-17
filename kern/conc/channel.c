@@ -5,11 +5,14 @@
  *      Author: HP
  */
 #include "channel.h"
+#include "kspinlock.h"
 #include <kern/proc/user_environment.h>
 #include <kern/cpu/sched.h>
 #include <kern/cpu/cpu.h>
 #include <inc/string.h>
 #include <inc/disk.h>
+#include <inc/environment_definitions.h>
+#include <kern/cpu/sched_helpers.h>
 
 /************************************************************************************/
 //==================================================================================//
@@ -39,9 +42,20 @@ void init_channel(struct Channel *chan, char *name)
 void sleep(struct Channel *chan, struct kspinlock* lk)
 {
 	//TODO: [PROJECT'26.GM#4] BLOCKING - [13] Channel sleep
-	//Your code is here
-	//Comment the following line
-	panic("sleep() is not implemented yet...!!");
+
+	acquire_kspinlock(&ProcessQueues.qlock);
+  release_kspinlock(lk);
+  struct Env *cur_proc = get_cpu_proc();
+  
+  enqueue(&(chan->queue), cur_proc);
+  cur_proc->env_status = ENV_BLOCKED;
+  
+  sched();
+
+  release_kspinlock(&ProcessQueues.qlock);
+  acquire_kspinlock(lk);
+
+	// panic("sleep() is not implemented yet...!!");
 }
 
 //==================================================
