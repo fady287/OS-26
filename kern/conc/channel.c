@@ -88,11 +88,9 @@ void wakeup_one(struct Channel *chan)
 // The queues lock must be held.
 // Ref: xv6-x86 OS code
 // chan MUST be of type "struct Env_Queue" to hold the blocked processes
-void wakeup_all(struct Channel *chan)
-{
-	//TODO: [PROJECT'26.GM#4] BLOCKING - [15] Channel wakeup_all
-	//Your code is here
-	//Comment the following line
-	panic("wakeup_all() is not implemented yet...!!");
+void wakeup_all(struct Channel *chan){
+    while(queue_size(&(chan->queue))>0){
+        wakeup_one(chan);
+    }
 }
 
