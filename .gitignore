@@ -3,5 +3,16 @@
 CON
 
 /obj/kern/bochs.img
+/obj/
+obj/
+Dockerfile.fos
+UpgradeLog.XML
+clean
+clean_fos.sh
+grade.sh
+mergedep.pl
+run
+setup_linux.sh
+stdout
 
 /obj/kern/bochs.img

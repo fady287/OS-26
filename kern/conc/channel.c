@@ -5,11 +5,14 @@
  *      Author: HP
  */
 #include "channel.h"
+#include "kspinlock.h"
 #include <kern/proc/user_environment.h>
 #include <kern/cpu/sched.h>
 #include <kern/cpu/cpu.h>
 #include <inc/string.h>
 #include <inc/disk.h>
+#include <inc/environment_definitions.h>
+#include <kern/cpu/sched_helpers.h>
 
 /************************************************************************************/
 //==================================================================================//
@@ -39,9 +42,20 @@ void init_channel(struct Channel *chan, char *name)
 void sleep(struct Channel *chan, struct kspinlock* lk)
 {
 	//TODO: [PROJECT'26.GM#4] BLOCKING - [13] Channel sleep
-	//Your code is here
-	//Comment the following line
-	panic("sleep() is not implemented yet...!!");
+
+	acquire_kspinlock(&ProcessQueues.qlock);
+  release_kspinlock(lk);
+  struct Env *cur_proc = get_cpu_proc();
+  
+  enqueue(&(chan->queue), cur_proc);
+  cur_proc->env_status = ENV_BLOCKED;
+  
+  sched();
+
+  release_kspinlock(&ProcessQueues.qlock);
+  acquire_kspinlock(lk);
+
+	// panic("sleep() is not implemented yet...!!");
 }
 
 //==================================================
@@ -54,9 +68,17 @@ void sleep(struct Channel *chan, struct kspinlock* lk)
 void wakeup_one(struct Channel *chan)
 {
 	//TODO: [PROJECT'26.GM#4] BLOCKING - [14] Channel wakeup_one
-	//Your code is here
-	//Comment the following line
-	panic("wakeup_one() is not implemented yet...!!");
+  // check that chan length > 0;
+
+  acquire_kspinlock(&ProcessQueues.qlock);
+  if ((queue_size(&(chan->queue)) > 0)) {
+    struct Env *cur_proc = dequeue(&(chan->queue));
+    cur_proc->env_status = ENV_READY;
+    sched_insert_ready(cur_proc);
+  }
+  release_kspinlock(&ProcessQueues.qlock);
+
+	// panic("wakeup_one() is not implemented yet...!!");
 }
 
 //====================================================
@@ -66,11 +88,9 @@ void wakeup_one(struct Channel *chan)
 // The queues lock must be held.
 // Ref: xv6-x86 OS code
 // chan MUST be of type "struct Env_Queue" to hold the blocked processes
-void wakeup_all(struct Channel *chan)
-{
-	//TODO: [PROJECT'26.GM#4] BLOCKING - [15] Channel wakeup_all
-	//Your code is here
-	//Comment the following line
-	panic("wakeup_all() is not implemented yet...!!");
+void wakeup_all(struct Channel *chan){
+    while(queue_size(&(chan->queue))>0){
+        wakeup_one(chan);
+    }
 }
 

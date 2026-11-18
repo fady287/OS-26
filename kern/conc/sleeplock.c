@@ -43,20 +43,24 @@ int holding_sleeplock(struct sleeplock *lk)
 //=====================================================================================//
 //============================== REQUIRED FUNCTIONS ===================================//
 //=====================================================================================//
-void acquire_sleeplock(struct sleeplock *lk)
-{
-	//TODO: [PROJECT'26.GM#4] BLOCKING - [16] SleepLock acquire_sleeplock
-	//Your code is here
-	//Comment the following line
-	panic("acquire_sleeplock() is not implemented yet...!!");
+void acquire_sleeplock (struct sleeplock *lk){
+    acquire_spinlock(&(lk -> lk));
+    while (lk->locked == 1){
+        sleep(&(lk->chan),&(lk->lk));
+    }
+    lk->locked = 1;
+    lk->pid = get_cpu_proc()->env_id;
+    release_spinlock(&(lk->lk));
 }
 
-void release_sleeplock(struct sleeplock *lk)
-{
-	//TODO: [PROJECT'26.GM#4] BLOCKING - [17] SleepLock release_sleeplock
-	//Your code is here
-	//Comment the following line
-	panic("release_sleeplock() is not implemented yet...!!");
+void release_sleeplock(struct sleeplock *lk){
+    acquire_spinlock(&(lk -> lk));
+    lk->locked = 0;
+    lk->pid = 0;
+    if(queue_size(&(lk->chan.queue))>0){
+        wakeup_all(&(lk->chan));
+    }
+    release_spinlock(&(lk->lk));
 }
 
 
