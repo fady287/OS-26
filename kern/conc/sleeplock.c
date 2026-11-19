@@ -44,23 +44,23 @@ int holding_sleeplock(struct sleeplock *lk)
 //============================== REQUIRED FUNCTIONS ===================================//
 //=====================================================================================//
 void acquire_sleeplock (struct sleeplock *lk){
-    acquire_spinlock(&(lk -> lk));
+    acquire_kspinlock(&(lk -> lk));
     while (lk->locked == 1){
         sleep(&(lk->chan),&(lk->lk));
     }
     lk->locked = 1;
     lk->pid = get_cpu_proc()->env_id;
-    release_spinlock(&(lk->lk));
+    release_kspinlock(&(lk->lk));
 }
 
 void release_sleeplock(struct sleeplock *lk){
-    acquire_spinlock(&(lk -> lk));
+    acquire_kspinlock(&(lk -> lk));
     lk->locked = 0;
     lk->pid = 0;
     if(queue_size(&(lk->chan.queue))>0){
         wakeup_all(&(lk->chan));
     }
-    release_spinlock(&(lk->lk));
+    release_kspinlock(&(lk->lk));
 }
 
 
