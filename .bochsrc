@@ -460,7 +460,7 @@ debugger_log: -
 parport1: enabled=1, file="/dev/stdout"
 # parport1: enabled=1, file="stdout"
 # parport1: enabled=1, file="console.out"
-# parport1: enabled=1, file="CON"  # or "CON:"
+parport1: enabled=1, file="CON"  # or "CON:"
 #parport1: enabled=1, file=-
 # parport1: enabled=1, file=/dev/tty
 
