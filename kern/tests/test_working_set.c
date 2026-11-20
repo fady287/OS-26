@@ -134,8 +134,8 @@ int sys_check_WS_list(uint32* WS_list_content, int actual_WS_list_size, uint32 l
 	/*DISABLE THE INTERRUPT DURING THE CHECKING TO AVOID CLOCK INTERRUPTS*/
 	pushcli(); cpuclk_pause();
 	{
-//		cprintf("CURRENT WS CONTENT BEFORE CHECKING:\n");
-//		env_page_ws_print(get_cpu_proc());
+		//cprintf("CURRENT WS CONTENT BEFORE CHECKING:\n");
+		//env_page_ws_print(get_cpu_proc());
 		struct Env* cur_env = get_cpu_proc();
 		assert(cur_env != NULL);
 		struct Env* env = cur_env;

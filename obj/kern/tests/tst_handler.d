@@ -16,5 +16,5 @@ obj/kern/tests/tst_handler.o: kern/tests/tst_handler.c \
  kern/tests/../mem/chunk_operations.h kern/tests/../tests/utilities.h \
  kern/tests/../tests/test_kheap.h kern/tests/../tests/test_priority.h \
  kern/tests/../tests/test_commands.h kern/cmd/command_prompt.h \
- kern/tests/../tests/test_dynamic_allocator.h \
+ kern/tests/../tests/test_dynamic_allocator.h inc/dynamic_allocator.h \
  kern/tests/../tests/test_scheduler.h

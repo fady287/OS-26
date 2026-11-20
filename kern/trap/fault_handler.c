@@ -171,6 +171,24 @@ void fault_handler(struct Trapframe *tf)
 			//(e.g. pointing to unmarked user heap page, kernel or wrong access rights),
 			//your code is here
 
+	           int permissions =  pt_get_page_permissions(faulted_env->env_page_directory, fault_va);
+
+	            //if pointing to kernel          	   --> rise a flag
+	            bool in_kernel = (fault_va >= USER_LIMIT);
+
+	            //if unmarked page in user heap (PERM_UHPAGE = 0)    --> rise a flag
+	            bool unmarked =  (fault_va >= USER_HEAP_START && fault_va < USER_HEAP_MAX)
+	            													&&	!(permissions & PERM_UHPAGE);
+
+	            //if its EXISTS and READ-ONLY page     --> rise a flag
+	            bool read_only = !(permissions & PERM_WRITEABLE) && (permissions & PERM_PRESENT);
+
+	            //if the flag is up then exit
+	            if (in_kernel || read_only || unmarked)
+	            {
+	                env_exit();
+	                return;
+	            }
 
 			/*============================================================================================*/
 		}
@@ -273,7 +291,43 @@ void page_fault_handler(struct Env * faulted_env, uint32 fault_va)
 			//TODO: [PROJECT'26.GM#3] FAULT HANDLER I - [12] Placement
 			//Your code is here
 			//Comment the following line
-			panic("page_fault_handler().FIFO PLACEMENT is not implemented yet...!!");
+			//panic("page_fault_handler().FIFO PLACEMENT is not implemented yet...!!");
+
+
+			//allocate space for the faulted page
+            struct FrameInfo* f = NULL;
+            allocate_frame(&f);
+            map_frame(faulted_env->env_page_directory, f, fault_va, PERM_USER | PERM_WRITEABLE);
+
+            //read the faulted page from page file to memory
+            int read_status = pf_read_env_page(faulted_env, (void*)fault_va);
+
+            //If the page does not exist on page file, then
+            if (read_status == E_PAGE_NOT_EXIST_IN_PF)
+            {
+                bool is_heap = (fault_va >= USER_HEAP_START && fault_va < USER_HEAP_MAX);
+                bool is_stack = (fault_va >= USTACKBOTTOM && fault_va < USTACKTOP);
+                //Not stack or heap
+                if (!is_stack && !is_heap)
+                {
+                    //exiting the process.
+                    unmap_frame(faulted_env->env_page_directory, fault_va);
+                    env_exit();
+                    return;
+                }
+            }
+
+            //If it is a stack or a heap page, then, it’s OK.
+            struct WorkingSetElement *the_new_ws = env_page_ws_list_create_element(faulted_env, fault_va);
+
+            //Reflect the changes in the page working set list (i.e. add new element to the list tail) }
+            LIST_INSERT_TAIL (&(faulted_env->page_WS_active_list), the_new_ws);
+
+            if(LIST_SIZE(&(faulted_env->page_WS_active_list)) == faulted_env->page_WS_max_size)
+                faulted_env->page_last_WS_element = LIST_FIRST(&(faulted_env->page_WS_active_list));
+            else
+                faulted_env->page_last_WS_element = NULL;
+
 		}
 		else if(isPageReplacmentAlgorithmLRU(PG_REP_LRU_LISTS_APPROX))
 		{
