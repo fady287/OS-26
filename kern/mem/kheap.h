@@ -39,19 +39,10 @@ void *krealloc(void *virtual_address, unsigned int new_size);
 unsigned int kheap_virtual_address(unsigned int physical_address);
 unsigned int kheap_physical_address(unsigned int virtual_address);
 
-LIST_HEAD(GapInfo_List, FreeGaps);
-typedef LIST_ENTRY(FreeGaps) Gap_LIST_entry_t;
-
-struct FreeGaps {
-	Gap_LIST_entry_t prev_next_info;
-	uint32 start;
-	uint32 size;
-};
-
-struct GapInfo_List FreeGapsList;
-
 int numOfKheapVACalls;
 
+uint32 next[NUM_OF_KHEAP_PAGES+5];
+uint32 prev[NUM_OF_KHEAP_PAGES+5];
 uint32 sz[NUM_OF_KHEAP_PAGES+5];
 uint32 buddy_system_block[NUM_OF_KHEAP_PAGES+5];
 

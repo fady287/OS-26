@@ -10,7 +10,10 @@
 #include <kern/cpu/cpu.h>
 #include <inc/queue.h>
 
+#define MAXXING KERNEL_HEAP_MAX
 
+uint32 FirstGap = MAXXING;
+uint32 LastGap  = MAXXING;
 
 /************************************************************************************/
 //==================================================================================//
@@ -60,6 +63,47 @@ uint32 getindex(void *va){
 	return index;
 }
 
+uint32 getaddr(uint32 index){
+	return KERNEL_HEAP_START+index*PAGE_SIZE;
+}
+
+void remgap(uint32 curgap){
+	if(next[curgap] != MAXXING) prev[next[curgap]] = prev[curgap];
+	else LastGap = prev[curgap];
+	if(prev[curgap] != MAXXING) next[prev[curgap]] = next[curgap];
+	else FirstGap = next[curgap];
+	next[curgap] = MAXXING;
+	prev[curgap] = MAXXING;
+}
+
+void addgap(uint32 idxafter, uint32 curgap){
+	prev[curgap] = idxafter;
+	if(idxafter == MAXXING){
+		next[curgap] = FirstGap;
+		FirstGap = curgap;
+	}
+	else{
+		next[curgap] = next[idxafter];
+		next[idxafter] = curgap;
+	}
+	if(next[curgap] != MAXXING) prev[next[curgap]] = curgap;
+	else LastGap = curgap;
+}
+
+void mapping(uint32 va, uint32 size){
+	for(uint32 i = va; i < va+size; i += PAGE_SIZE){
+		struct FrameInfo *newframe;
+		allocate_frame(&newframe);
+		map_frame(ptr_page_directory, newframe, i, PERM_WRITEABLE);
+		uint32 x = to_frame_number(newframe);
+		Frame_to_VA[x] = i;
+	}
+}
+
+/**************************************************/
+/* BLOCK ALLOCATOR */
+/**************************************************/
+
 void* create_buddy_space()
 {
 	uint32 va = (uint32)kmalloc(PAGE_SIZE);
@@ -81,65 +125,45 @@ void  delete_buddy_space(void *va)
 void* kmalloc(unsigned int size)
 {
 	if(size <= DYN_ALLOC_MAX_BLOCK_SIZE) return alloc_block(size);
-	size = ROUNDUP(size, PAGE_SIZE);
 	if(size > KERNEL_HEAP_MAX-KERNEL_HEAP_START) return NULL;
-	struct FreeGaps *cur, *mx = NULL;
-	LIST_FOREACH(cur, &FreeGapsList, FreeGaps)
+	size = ROUNDUP(size, PAGE_SIZE);
+	uint32 cur, mx = MAXXING;
+	for(cur = FirstGap; cur != MAXXING; cur = next[cur])
 	{
-		if(cur->size == size){
+		if(sz[cur] == size){
 			mx = cur;
 			break;
 		}
-		if(mx == NULL || mx->size < cur->size) mx = cur;
+		if(mx == MAXXING || sz[mx] < sz[cur]) mx = cur;
 	}
-	if(mx != NULL && mx->size > size){
-		uint32 ret = mx->start;
-		uint32 index = getindex((void*)ret);
-		sz[index] = size;
-		for(uint32 i = ret; i < ret+size; i += PAGE_SIZE){
-			struct FrameInfo *newframe;
-			allocate_frame(&newframe);
-			map_frame(ptr_page_directory, newframe, i, PERM_WRITEABLE);
-			uint32 x = to_frame_number(newframe);
-			Frame_to_VA[x] = i;
-		}
-		mx->size -= size;
-		mx->start += size;
+	if(mx != MAXXING && sz[mx] > size){
+		uint32 ret = getaddr(mx);
+		uint32 newsz = sz[mx]-size;
+		uint32 newadd = mx+size/PAGE_SIZE;
+		uint32 prv = prev[mx];
+		remgap(mx);
+		sz[mx] = size;
+		sz[newadd] = newsz;
+		addgap(prv, newadd);
+		mapping(ret, size);
 		return (void*)ret;
 	}
-	else if(mx != NULL && mx->size == size){
-		uint32 ret = mx->start;
-		uint32 index = getindex((void*)ret);
-		sz[index] = size;
-		for(uint32 i = ret; i < ret+size; i += PAGE_SIZE){
-			struct FrameInfo *newframe;
-			allocate_frame(&newframe);
-			map_frame(ptr_page_directory, newframe, i, PERM_WRITEABLE);
-			uint32 x = to_frame_number(newframe);
-			Frame_to_VA[x] = i;
-		}
-		LIST_REMOVE(&FreeGapsList, mx);
+	else if(mx != MAXXING && sz[mx] == size){
+		uint32 ret = getaddr(mx);
+		remgap(mx);
+		sz[mx] = size;
+		mapping(ret, size);
 		return (void*)ret;
-
 	}
 	else{
 		if(KERNEL_HEAP_MAX-kheapPageAllocBreak < size) return NULL;
-		else{
-			uint32 ret = kheapPageAllocBreak;
-			uint32 index = getindex((void*)ret);
-			sz[index] = size;
-			kheapPageAllocBreak += size;
-			for(uint32 i = ret; i < ret+size; i += PAGE_SIZE){
-				struct FrameInfo *newframe;
-				allocate_frame(&newframe);
-				map_frame(ptr_page_directory, newframe, i, PERM_WRITEABLE);
-				uint32 x = to_frame_number(newframe);
-				Frame_to_VA[x] = i;
-			}
-			return (void*)ret;
-		}
+		uint32 ret = kheapPageAllocBreak;
+		uint32 index = getindex((void*)ret);
+		sz[index] = size;
+		kheapPageAllocBreak += size;
+		mapping(ret, size);
+		return (void*)ret;
 	}
-
 
 	/*EFFICIENT IMPLEMENTATION ~O(#FREE BLOCKS + #ALLOCATED PAGES) IS REQUIRED */
 }
@@ -154,44 +178,49 @@ void kfree(void* virtual_address)
 		return;
 	}
 	uint32 size = sz[index];
-	sz[index] = 0;
 	for(uint32 i = va; i < va+size; i += PAGE_SIZE){
-		uint32 *meh=NULL;
+		uint32 *meh = NULL;
 		struct FrameInfo *frame = get_frame_info(ptr_page_directory, i, &meh);
 		if(frame == 0){
 			unmap_frame(ptr_page_directory, i);
 			continue;
 		}
-		uint32 x = to_frame_number(frame);
-		Frame_to_VA[x] = 0;
-		unmap_frame(ptr_page_directory, i);
+		if(frame != NULL){
+			uint32 x = to_frame_number(frame);
+			Frame_to_VA[x] = 0;
+			unmap_frame(ptr_page_directory, i);
+		}
 	}
-	struct FreeGaps *forcur, *insertidx = NULL;
-	LIST_FOREACH(forcur, &FreeGapsList, FreeGaps){
-		if(forcur->start+forcur->size < va) insertidx = forcur;
+	uint32 cur = index;
+	uint32 forcur, insertidx = MAXXING;
+	for(forcur = FirstGap; forcur != MAXXING; forcur = next[forcur]){
+		if(forcur < cur) insertidx = forcur;
 		else break;
 	}
-	uint32 sz = sizeof(struct FreeGaps);
-	struct FreeGaps *cur = kmalloc(sz);
-	if(insertidx == NULL) LIST_INSERT_HEAD(&FreeGapsList, cur);
-	else LIST_INSERT_AFTER(&FreeGapsList, insertidx, cur);
-	cur->size = size;
-	cur->start = va;
-	struct FreeGaps *nxt = cur->prev_next_info.le_next;
-	struct FreeGaps *prv = cur->prev_next_info.le_prev;
-	if(nxt != NULL){
-		uint32 idx = (nxt->start-KERNEL_HEAP_START)/PAGE_SIZE;
-		if(!buddy_system_block[idx] && cur->start+cur->size+1 == nxt->start){
-			cur->size += nxt->size;
-			LIST_REMOVE(&FreeGapsList, nxt);
+	addgap(insertidx, cur);
+	uint32 nxt = next[cur];
+	uint32 prv = prev[cur];
+	if(nxt != MAXXING){
+		if(cur+sz[cur]/PAGE_SIZE == nxt){
+			sz[cur] += sz[nxt];
+			sz[nxt] = 0;
+			remgap(nxt);
 		}
 	}
-	if(prv != NULL){
-		uint32 idx = (prv->start-KERNEL_HEAP_START)/PAGE_SIZE;
-		if(!buddy_system_block[idx] && prv->start+prv->size+1 == cur->start){
-			prv->size += cur->size;
-			LIST_REMOVE(&FreeGapsList, cur);
+	if(prv != MAXXING){
+		if(prv+sz[prv]/PAGE_SIZE == cur){
+			sz[prv] += sz[cur];
+			sz[cur] = 0;
+			remgap(cur);
+			cur = prv;
 		}
+	}
+	while(LastGap != MAXXING){
+		uint32 tmp = LastGap;
+		if(getaddr(tmp)+sz[tmp] != kheapPageAllocBreak) break;
+		kheapPageAllocBreak = getaddr(tmp);
+		remgap(tmp);
+		sz[tmp] = 0;
 	}
 	/*EFFICIENT IMPLEMENTATION ~O(#FREE BLOCKS + #FREED PAGES) IS REQUIRED */
 }
@@ -210,7 +239,6 @@ unsigned int kheap_virtual_address(unsigned int physical_address)
 	uint32 x = to_frame_number(to_frame_info(physical_address));
 	if(Frame_to_VA[x]==0) return 0;
 	return Frame_to_VA[x] + (physical_address % PAGE_SIZE);
-
 	/*EFFICIENT IMPLEMENTATION ~O(1) IS REQUIRED */
 }
 
