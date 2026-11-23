@@ -171,7 +171,8 @@ void kfree(void* virtual_address)
 		if(forcur->start+forcur->size < va) insertidx = forcur;
 		else break;
 	}
-	struct FreeGaps *cur = NULL;
+	uint32 sz = sizeof(struct FreeGaps);
+	struct FreeGaps *cur = kmalloc(sz);
 	if(insertidx == NULL) LIST_INSERT_HEAD(&FreeGapsList, cur);
 	else LIST_INSERT_AFTER(&FreeGapsList, insertidx, cur);
 	cur->size = size;
